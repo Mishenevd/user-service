@@ -1,0 +1,13 @@
+{
+  "externalResponse": [
+    {
+      "userName": "testUserName",
+
+      "firstName": "testFirstName",
+
+      "lastName": "testLastName",
+
+      "creationDate": "date"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+user:
+  exchange: test
+
+external-service-url: http://www.somedomain.test
