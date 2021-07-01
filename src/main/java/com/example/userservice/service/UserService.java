@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -48,4 +49,30 @@ public class UserService {
                 .flatMap(response -> Mono.just(externalResponseRepository.save(response)));
     }
 
+    public Flux<UserDto> findAllLike(String userName) {
+        List<User> users = userName.isEmpty() ? userRepository.findAll()
+                : userRepository.findAllByUserNameContaining(userName);
+        return Flux.fromIterable(users)
+                .map(u -> mapperFacade.map(u, UserDto.class));
+    }
+
+    public Mono<Void> delete() {
+        return Mono.fromRunnable(userRepository::deleteAll);
+    }
+
+    public Mono<UserDto> getById(String id) {
+        return Mono.fromCallable(() -> userRepository.findById(id).orElseThrow(RuntimeException::new))
+                .map(u -> mapperFacade.map(u, UserDto.class));
+    }
+
+    public Mono<Void> updateById(String id, UserDto user) {
+        return Mono.fromCallable(() -> userRepository.findById(id).orElseThrow(RuntimeException::new))
+                .doOnNext(u -> {
+                    u.setFirstName(user.getName());
+                    u.setLastName(user.getSurname());
+                    u.setUserName(user.getUserName());
+                    userRepository.save(u);
+                })
+                .then();
+    }
 }

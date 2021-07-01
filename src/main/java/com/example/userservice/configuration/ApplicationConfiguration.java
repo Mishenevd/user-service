@@ -21,11 +21,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.reactive.config.CorsRegistry;
+import org.springframework.web.reactive.config.WebFluxConfigurer;
 
 @Configuration
 @EnableMongoRepositories(basePackageClasses = RepositoryPackageMarker.class)
-public class ApplicationConfiguration {
+public class ApplicationConfiguration implements WebFluxConfigurer {
 
     @Value("${user.exchange}")
     private String userExchange;
@@ -44,6 +50,20 @@ public class ApplicationConfiguration {
                 user.setFirstName(source.getName());
                 user.setLastName(source.getSurname());
                 return user;
+            }
+        });
+
+        mapperFactory.getConverterFactory().registerConverter(new CustomConverter<User, UserDto>() {
+            @Override
+            public UserDto convert(User source,
+                                Type<? extends UserDto> destinationType,
+                                MappingContext mappingContext) {
+                UserDto userDto = new UserDto();
+                userDto.setUserName(source.getUserName());
+                userDto.setName(source.getFirstName());
+                userDto.setSurname(source.getLastName());
+                userDto.setId(source.getId());
+                return userDto;
             }
         });
 
@@ -102,6 +122,29 @@ public class ApplicationConfiguration {
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowCredentials(true)
+                .allowedOrigins("*")
+                .allowedHeaders("*")
+                .allowedMethods("*")
+                .exposedHeaders(HttpHeaders.SET_COOKIE);
+    }
+
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+        corsConfiguration.setAllowCredentials(true);
+        corsConfiguration.addAllowedHeader("*");
+        corsConfiguration.addAllowedMethod("*");
+        corsConfiguration.addAllowedOrigin("*");
+        corsConfiguration.addExposedHeader(HttpHeaders.SET_COOKIE);
+        UrlBasedCorsConfigurationSource corsConfigurationSource = new UrlBasedCorsConfigurationSource();
+        corsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
+        return new CorsWebFilter(corsConfigurationSource);
     }
 
 }
